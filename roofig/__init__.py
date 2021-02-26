@@ -9,7 +9,7 @@ class ConfigurationError(Exception):
     pass
 
 
-class FitParameters():
+class FitParameters(dict):
     class RealVar():
         def __init__(self, *args):
             self.var = RooRealVar(args[0], args[0], *args[1:])
@@ -48,16 +48,22 @@ class FitParameters():
 
     def __setattr__(self, name, value):
         if hasattr(self, name):
-            if type(value) in [int, float]:
+            if np.isreal(value):
                 getattr(self, name).setVal(value)
                 return
             else:
                 print(f'warning: overriding "{name}"')
         super().__setattr__(name, value)
 
+    def __setitem__(self, key, value):
+        self.__setattr__(key, value)
+
+    def __getitem__(self, key):
+        return self.__getattribute__(key)
+
     @property
     def r(self):
-        class bag():
+        class bag(dict):
             pass
 
         params = bag()
@@ -65,8 +71,10 @@ class FitParameters():
             param = getattr(self, name)
             if type(param) == FitParameters.RealVar:
                 setattr(params, name, param.var)
+                params[name] = param.var
             elif type(param) == RooCategory:
                 setattr(params, name, param)
+                params[name] = param
         return params
 
     def add_param(self, name, *args):
